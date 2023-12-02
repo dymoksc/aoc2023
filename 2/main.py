@@ -1,5 +1,6 @@
 import fileinput
 import re
+from functools import reduce
 
 bag = {
     "red": 12,
@@ -9,14 +10,11 @@ bag = {
 
 
 def process(line: str) -> int:
+    req = {"red": 0, "green": 0, "blue": 0}
     for sample in line.rstrip("\n").split(": ")[1].split("; "):
         for n, color in re.findall("(\d+) ([^,]+)", sample):
-            if bag[color] >= int(n):
-                pass
-            else:
-                return 0
-                return
-    return int(line.rstrip("\n").split(": ")[0].split(" ")[1])
+            req[color] = max(int(n), req[color])
+    return reduce(lambda x, y: x * y, list(req.values()))
 
 
 with fileinput.input(files=('input1'), encoding="utf-8") as f:
