@@ -1,13 +1,15 @@
 import fileinput
 import re
+from functools import reduce
 
 with fileinput.input(files=('input'), encoding="utf-8") as f:
     lines = [l.rstrip() for l in f]
 
-added: dict[tuple[int, int], int] = {}
+sum = 0
 for i in range(len(lines)):
     for j in range(len(lines[i])):
-        if lines[i][j] != '.' and (lines[i][j] < '0' or lines[i][j] > '9'):
+        if lines[i][j] == '*':
+            added: dict[tuple[int, int], int] = {}
             for x_offset in range(-1, 2):
                 for y_offset in range(-1, 2):
                     if i + y_offset == -1 or i + y_offset == len(lines) \
@@ -21,8 +23,12 @@ for i in range(len(lines)):
                         if (i + y_offset, x_number_start) not in added:
                             res = re.search(r'\d+', lines[i + y_offset][x_number_start:]).group()
                             added[(i + y_offset, x_number_start)] = res
+            if len(added) == 2:
+                sum += reduce(lambda x, y: x * y, list(int(i) for i in added.values()))
 
-print(sum(list(int(i) for i in added.values())))
+print(sum)
+
+# print(sum(list(int(i) for i in added.values())))
 
 # for i in range(len(lines)):
 #     skip = 0
