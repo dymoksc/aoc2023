@@ -28,11 +28,13 @@ with fileinput.input(files=('input'), encoding="utf-8") as f:
     for i, line in enumerate(f):
         if i == 0:
             assert line.split(":")[0] == "Time"
-            times = [int(i) for i in line.split(":")[1].strip().split()]
+            # times = [int(i) for i in line.split(":")[1].strip().split()]
+            times = [ int(line.split(":")[1].replace(" ", "")) ]
             print(times)
         elif i == 1:
             assert line.split(":")[0] == "Distance"
-            distances = [int(i) for i in line.split(":")[1].strip().split()]
+            # distances = [int(i) for i in line.split(":")[1].strip().split()]
+            distances = [ int(line.split(":")[1].replace(" ", "")) ]
             print(distances)
         else:
             assert False
