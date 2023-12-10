@@ -1,6 +1,6 @@
 import fileinput
 
-tiles: list[str] = []
+tiles: list[list[str]] = []
 i = 0
 dist: dict[tuple[int, int], int] = {}
 prev: dict[tuple[int, int], tuple[int, int]] = {}
@@ -11,7 +11,7 @@ neighbors: list[list[list[tuple[int, int]]]] = []
 with fileinput.input(files=("input"), encoding="utf-8") as f:
     for l in f:
         neighbors.append([])
-        tiles.append(l.rstrip("\n"))
+        tiles.append(list(l.rstrip("\n")))
         for j in range(len(tiles[i])):
             neighbors[i].append([])
             if tiles[i][j] == "S":
@@ -81,4 +81,24 @@ for i in range(len(tiles)):
         if dist[(i, j)] < 99999:
             max_dist = max(max_dist, dist[(i, j)])
 
-print(max_dist)
+# Ray casting
+counter = 0
+for i in range(len(tiles)):
+    enc_walls = 0
+    for j in range(len(tiles[0])):
+        if dist[(i, j)] == 99999:
+            if enc_walls % 2 == 1:
+                counter += 1
+                tiles[i][j] = "1"
+            else:
+                tiles[i][j] = "0"
+        elif i != len(tiles) - 1 and (i + 1, j) in neighbors[i][j]:
+            enc_walls += 1
+        elif i == len(tiles) - 1 and (i - 1, j) in neighbors[i][j]:
+            enc_walls += 1
+        print(tiles[i][j], end="")
+    print()
+
+print(counter)
+
+# print(max_dist)
