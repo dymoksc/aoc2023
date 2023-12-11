@@ -1,5 +1,7 @@
 import fileinput
 
+expansion = 1000000
+
 galaxies_by_col: dict[int, list[tuple[int, int]]] = {}
 cols = 0
 rows = 0
@@ -15,7 +17,7 @@ with fileinput.input(files=("input"), encoding="utf-8") as f:
                     galaxies_by_col[j] = []
                 galaxies_by_col[j].append((rows - 1, j))
         if galaxies_in_row == 0:
-            rows += 1
+            rows += expansion - 1
         cols = j + 1
 
 last_row_w_galaxy = -1
@@ -23,7 +25,7 @@ modifier = 0
 all_galaxies: list[tuple[int, int]] = []
 galaxies_by_col = dict(sorted(galaxies_by_col.items()))
 for k, galaxies in galaxies_by_col.items():
-    modifier += k + modifier - last_row_w_galaxy - 1
+    modifier += (k + modifier - last_row_w_galaxy - 1) * (expansion - 1)
     k += modifier
     last_row_w_galaxy = k
     for galaxy in galaxies:
