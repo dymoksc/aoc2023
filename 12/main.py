@@ -1,4 +1,6 @@
 import fileinput
+import re
+from typing import Dict, Any
 
 # ..........
 # #.#.###... 0 2 4
@@ -8,8 +10,13 @@ import fileinput
 # #..#.###.. 0 3 5
 # #..#..###. 0 3 6
 
+cache: dict[tuple[int, int], int] = {}
+
 
 def inc_shifts(i: int, prev_end: int) -> int:
+    if (i, prev_end) in cache:
+        return cache[(i, prev_end)]
+
     if i == 0:
         shifts[0] = 0
     else:
@@ -17,6 +24,10 @@ def inc_shifts(i: int, prev_end: int) -> int:
 
     counter = 0
     while shifts[i] + lengths[i] <= len(fmt):
+        if (i, shifts[i]) in cache:
+            counter += cache[(i, shifts[i])]
+            break
+
         if '#' in fmt[prev_end:shifts[i]]:
             break
         # if '.' not in fmt[shifts[i]:shifts[i] + lengths[i]] :
@@ -46,15 +57,26 @@ def inc_shifts(i: int, prev_end: int) -> int:
                 counter += inc_shifts(i + 1, shifts[i] + lengths[i])
         shifts[i] += 1
 
+    cache[(i, prev_end)] = counter
+
     return counter
 
 
 with fileinput.input(files=("input"), encoding="utf-8") as f:
     sum = 0
     for e, line in enumerate(f):
+        cache = {}
         # if e != 1: continue
         fmt, lengths = line.rstrip("\n").split(" ")
         lengths = [int(i) for i in lengths.split(",")]
+        new_lengths = []
+        new_fmt = ""
+        for i in range(5):
+            new_lengths.extend(lengths)
+            if i != 0: new_fmt += "?"
+            new_fmt += fmt
+        lengths = new_lengths
+        fmt = new_fmt
 
         shifts = [0 for n in lengths]
         for i in range(len(shifts)):
@@ -64,7 +86,9 @@ with fileinput.input(files=("input"), encoding="utf-8") as f:
 
         # print(fmt)
         # print()
-        sum += inc_shifts(0, 0)
+        count = inc_shifts(0, 0)
+        print(count)
+        sum += count
 
         # shifts[1] = shifts[0] + lengths[0] + 1
         # while shifts[1] + lengths[1] <= (length - lengths[2]):
@@ -73,5 +97,23 @@ with fileinput.input(files=("input"), encoding="utf-8") as f:
         #         print(shifts)
         #         shifts[2] += 1
         #     shifts[1] += 1
+        # quit(0)
 
+    print()
     print(sum)
+
+    #                                 len   ?count
+    # 1   1       1       1 * 1       7     3
+    # 4   16384   4096    64 * 64     14    5
+    # 1   1       1       1 * 1       15    8
+    # 1   16      16      4 * 4       13    4
+    # 4   2500    625     25 * 25     19    4
+    # 10  506250  50625   225 * 225   12    9
+
+
+    # ???.### 1,1,3 - 1 arrangement
+    # .??..??...?##. 1,1,3 - 4 arrangements
+    # ?#?#?#?#?#?#?#? 1,3,1,6 - 1 arrangement
+    # ????.#...#... 4,1,1 - 1 arrangement
+    # ????.######..#####. 1,6,5 - 4 arrangements
+    # ?###???????? 3,2,1 - 10 arrangements
