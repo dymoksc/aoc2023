@@ -1,82 +1,65 @@
 import fileinput
-from typing import Optional
 
-Coords = tuple[int, int]
-adjacency_list: dict[Coords, tuple[int, list[tuple[Coords, str]]]] = {}
-
-rows: int = 0
-cols: int = 0
+dir_history = 3
 
 field: list[list[int]] = []
 with (fileinput.input(files=("input_sample"), encoding="utf-8") as f):
     for line in f:
         field.append([int(i) for i in line.rstrip('\n')])
-rows = len(field)
-cols = len(field[0])
 
-INF = 99999999
-dist: dict[Coords, int] = {}
-prev: dict[Coords, Optional[tuple[Coords, str]]] = {}
-q: list[Coords] = []
-is_in_q: dict[Coords, bool] = {}
+INF = 9999
+invocations = 0
+global_min = 9999
 
-for i in range(rows - 1, -1, -1):
-    for j in range(cols - 1, -1, -1):
-        neighbors = []
-        if i != 0: neighbors.append(((i - 1, j), '^'))
-        if j != 0: neighbors.append(((i, j - 1), '<'))
-        if i != len(field) - 1: neighbors.append(((i + 1, j), 'v'))
-        if j != len(field[0]) - 1: neighbors.append(((i, j + 1), '>'))
-        adjacency_list[(i, j)] = (field[i][j], neighbors)
 
-        dist[(i, j)] = INF
-        prev[(i, j)] = None
-        q.append((i, j))
-        is_in_q[(i, j)] = True
-dist[(0, 0)] = 0
+def explore(row: int, col: int, prev_dirs: str, visited: list[list[bool]], depth: int = 0, cur_dist: int = 0) -> tuple[int, list[tuple[int, int]]]:
+    global invocations, global_min
+    invocations += 1
 
-prev_dir = 'x'
-same_dir_counter = 0
-while len(q) != 0:
-    u = q.pop()
-    is_in_q[u] = False
+    if cur_dist > global_min:
+        return cur_dist, []
 
-    dir_history = ""
-    vert = u
-    while prev[vert] is not None and len(dir_history) < 3:
-        dir_history = dir_history + prev[vert][1]
-        vert = prev[vert][0]
+    if row == len(field) - 1 and col == len(field[0]) - 1:
+        # for row in visited:
+        #     print(row)
+        # print()
+        return cur_dist + field[col][row], [(row, col)]
 
-    for v, dir in adjacency_list[u][1]:
-        if not is_in_q[v]:
+    min_dist = INF
+    min_trace = []
+    visited[row][col] = True
+    for dir in "><v^":
+        if dir * dir_history == prev_dirs:
             continue
-        if len(dir_history) == 3 and dir_history[0] == dir_history[1] == dir_history[2] == dir:
+        new_row, new_col = row, col
+        if dir == ">":
+            new_col += 1
+        if dir == "<":
+            new_col -= 1
+        if dir == "v":
+            new_row += 1
+        if dir == "^":
+            new_row -= 1
+        if new_row not in range(len(field)) or new_col not in range(len(field[0])) or visited[new_row][new_col]:
             continue
 
-        alt = dist[u] + adjacency_list[u][0]
-        if alt < dist[v]:
-            dist[v] = alt
-            prev[v] = (u, dir)
+        dirs = dir + prev_dirs
+        if len(dirs) > dir_history:
+            dirs = dirs[:3]
+        dist, trace = explore(new_row, new_col, dirs, visited, depth + 1, cur_dist + (field[col][row] if depth != 0 else 0))
+        # dist += field[new_row][new_col]
+        if dist < min_dist:
+            min_dist = dist
+            min_trace = trace
+            if depth == 0:
+                global_min = min_dist
+                print(global_min)
 
-s_field = [[str(c) for c in line] for line in field]
+    visited[row][col] = False
+    # print(depth)
 
-# Retrieve path
-s = []
-u: tuple[int, int] = (len(s_field) - 1, len(s_field[0]) - 1)
-dir = 'x'
-if u in prev or u == (0, 0):
-    while u is not None:
-        s.insert(0, u)
-        prev_rec = prev[u]
-        if prev_rec is None:
-            u = None
-        else:
-            u_new, dir = prev_rec
-            s_field[u[0]][u[1]] = dir
-            u = u_new
+    return min_dist, min_trace + [(row, col)]
 
-for line in s_field:
-    print("".join(line))
 
-print(dist[len(s_field) - 1, len(s_field[0]) - 1])
-
+print(explore(0, 0, "", [[False for _ in line] for line in field]))
+print(invocations)
