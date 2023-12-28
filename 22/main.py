@@ -1,3 +1,4 @@
+import copy
 import fileinput
 import heapq
 from collections import namedtuple
@@ -61,6 +62,7 @@ field: list[list[list[str]]] = [[['.' for _ in range(max_z + 1)] for _ in range(
 
 lying_blocks_by_high: list[Block] = []
 dependencies: dict[Block, list[Block]] = {}
+reverse_deps: dict[Block, list[Block]] = {}
 
 collision_counter = 0
 while len(blocks_in_air_by_low) != 0:
@@ -86,6 +88,7 @@ while len(blocks_in_air_by_low) != 0:
             #     assert depend_on_blocks[-1].high.z == lb.high.z
             lie_on_level = lb.high.z
             depend_on_blocks.append(lb)
+            reverse_deps[lb].append(b)
         elif lie_on_level > lb.high.z:
             break
 
@@ -97,47 +100,62 @@ while len(blocks_in_air_by_low) != 0:
     heapq.heappush(lying_blocks_by_high, (-b.high.z, collision_counter, b))
     collision_counter += 1
     dependencies[b] = depend_on_blocks
+    reverse_deps[b] = []
 
     for i in range(min(b.low.x, b.high.x), max(b.low.x, b.high.x) + 1):
         for j in range(min(b.low.y, b.high.y), max(b.low.y, b.high.y) + 1):
             for k in range(min(b.low.z, b.high.z), max(b.low.z, b.high.z) + 1):
                 field[i][j][k] = b.counter
 
-only_base = []
-for deps in dependencies.values():
-    for dep in deps:
-        assert dep.high.z == deps[0].high.z
-    if len(deps) == 1:
-        only_base.append(deps[0])
-print(len(lying_blocks_by_high) - len(set(only_base)))
 
-for k in range(max_z, -1, -1):
-    for i in range(max_x + 1):
-        char = '.'
-        for j in range(max_y + 1):
-            if field[i][j][k] != '.':
-                if char == '.':
-                    char = field[i][j][k]
-                elif char != field[i][j][k]:
-                    char = '?'
-        print(char, end="")
-    print()
+def get_fallen(b: Block) -> list[Block]:
+    fallen = [b]
+    for dep in reverse_deps[b]:
+        fallen.extend(get_fallen(dep))
+    return fallen
 
-print()
 
-for k in range(max_z, -1, -1):
-    for j in range(max_y + 1):
-        char = '.'
-        for i in range(max_x + 1):
-            if field[i][j][k] != '.':
-                if char == '.':
-                    char = field[i][j][k]
-                elif char != field[i][j][k]:
-                    char = '?'
-        print(char, end="")
-    print()
+def disintegrate(bs: list[Block]) -> int:
+    cnt = 0
+    for b in bs:
+        for dependant in reverse_deps[b]:
+            if len([dep for dep in dependencies[dependant] if dep not in bs]) == 0 and dependant not in bs:
+                bs.append(dependant)
+                cnt += 1
+    return cnt
 
-print()
+# for _, _, b in lying_blocks_by_high:
+#     print(b.counter, disintegrate([b]))
+
+print(sum([disintegrate([b]) for _, _, b in lying_blocks_by_high]))
+
+# for k in range(max_z, -1, -1):
+#     for i in range(max_x + 1):
+#         char = '.'
+#         for j in range(max_y + 1):
+#             if field[i][j][k] != '.':
+#                 if char == '.':
+#                     char = field[i][j][k]
+#                 elif char != field[i][j][k]:
+#                     char = '?'
+#         print(char, end="")
+#     print()
+#
+# print()
+#
+# for k in range(max_z, -1, -1):
+#     for j in range(max_y + 1):
+#         char = '.'
+#         for i in range(max_x + 1):
+#             if field[i][j][k] != '.':
+#                 if char == '.':
+#                     char = field[i][j][k]
+#                 elif char != field[i][j][k]:
+#                     char = '?'
+#         print(char, end="")
+#     print()
+#
+# print()
 
 # print([str(b) for _, b in blocks_in_air_by_low])
 # print([str(b) for _, b in lying_blocks_by_high])
